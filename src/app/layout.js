@@ -1,13 +1,17 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Two Souls, One Journey | Our Love Story",
-  description: "A digital celebration of our journey together, from the first glance to forever.",
+  title: "Aşk Arşivi | Hikayenizi Ölümsüzleştirin",
+  description: "En özel gününüzü dijital dünyada zarafetle paylaşın.",
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="tr" suppressHydrationWarning>
       <body suppressHydrationWarning>
         {children}
       </body>

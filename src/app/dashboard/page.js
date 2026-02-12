@@ -398,11 +398,14 @@ export default function Dashboard() {
         </div>
     );
 
+    const [mobileTab, setMobileTab] = useState('editor'); // 'editor' | 'preview'
+
     if (loading) return <div className={editorStyles.loading}>Yükleniyor...</div>;
 
     return (
         <div className={editorStyles.dashboardLayout}>
-            <aside className={editorStyles.sidebar}>
+            {/* Sidebar (Editor) */}
+            <aside className={`${editorStyles.sidebar} ${mobileTab === 'preview' ? editorStyles.hiddenOnMobile : ''}`}>
                 <div className={editorStyles.sidebarHeader}>
                     <div className={editorStyles.sidebarTitleRow}>
                         <h2>Aşk Paneli</h2>
@@ -418,7 +421,7 @@ export default function Dashboard() {
                         )}
                     </div>
 
-                    <div className={editorStyles.deviceToggle}>
+                    <div className={`${editorStyles.deviceToggle} ${editorStyles.hiddenOnMobile}`}>
                         <button
                             onClick={() => setPreviewDevice('phone')}
                             className={previewDevice === 'phone' ? editorStyles.deviceBtnActive : editorStyles.deviceBtn}
@@ -467,8 +470,7 @@ export default function Dashboard() {
                         </button>
                     )}
 
-                    {/* Slug selection removed from here */}
-
+                    {/* Editor sections (Hero, Timeline, etc.) */}
                     {activeEditor === 'Hero' && (
                         <div className={editorStyles.sidebarItem}>
                             <h3>Kapak Ayarları</h3>
@@ -611,7 +613,8 @@ export default function Dashboard() {
                 <button onClick={() => signOut(auth)} className={editorStyles.logoutBtn}>Çıkış Yap</button>
             </aside>
 
-            <main className={editorStyles.previewContainer}>
+            {/* Preview (Mockup) */}
+            <main className={`${editorStyles.previewContainer} ${mobileTab === 'editor' ? editorStyles.hiddenOnMobile : ''}`}>
                 {previewDevice === 'phone' ? (
                     <div className={editorStyles.phoneMockup}>
                         <div className={editorStyles.phoneScreen}>
@@ -652,6 +655,24 @@ export default function Dashboard() {
                     </div>
                 )}
             </main>
+
+            {/* Mobile Navigation */}
+            <div className={editorStyles.mobileNav}>
+                <button
+                    onClick={() => setMobileTab('editor')}
+                    className={`${editorStyles.mobileNavBtn} ${mobileTab === 'editor' ? editorStyles.mobileNavBtnActive : ''}`}
+                >
+                    <HiOutlinePencilSquare className={editorStyles.mobileNavIcon} />
+                    Düzenle
+                </button>
+                <button
+                    onClick={() => setMobileTab('preview')}
+                    className={`${editorStyles.mobileNavBtn} ${mobileTab === 'preview' ? editorStyles.mobileNavBtnActive : ''}`}
+                >
+                    <HiOutlineDevicePhoneMobile className={editorStyles.mobileNavIcon} />
+                    Önizle
+                </button>
+            </div>
         </div>
     );
 }

@@ -14,6 +14,7 @@ import {
   HiOutlinePhoto,
   HiOutlineSparkles
 } from "react-icons/hi2";
+import Footer from '@/components/Footer';
 
 function LandingPageContent() {
   const searchParams = useSearchParams();
@@ -41,7 +42,7 @@ function LandingPageContent() {
       {/* INTRODUCTION: Navbar & Hero */}
       <nav className={styles.navbar}>
         <div className={styles.navContainer}>
-          <div className={styles.logo}>Sonsuz Aşk</div>
+          <div className={styles.logo}>Aşk Arşivi</div>
           <div className={styles.navLinks}>
             <a href="#ozellikler">Özellikler</a>
             <a href="#nasil-calisir">Nasıl Çalışır</a>
@@ -138,7 +139,7 @@ function LandingPageContent() {
         <p className={styles.memoriesQuote}>
           "Gerçek aşkın hikayesi asla bitmez, sadece yeni sayfalara taşınır."
         </p>
-        <span className={styles.author}>— Sonsuz Aşk</span>
+        <span className={styles.author}>— Aşk Arşivi</span>
       </section>
 
       {/* DEVELOPMENT: How it Works (Introduction to Process) */}
@@ -177,29 +178,7 @@ function LandingPageContent() {
       </section>
 
       {/* CONCLUSION: Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContent}>
-          <div className={styles.footerLogo}>
-            <h3>Sonsuz Aşk</h3>
-            <p>En mutlu gününüz, dijital dünyada.</p>
-          </div>
-          <div className={styles.footerLinks}>
-            <div className={styles.linkGroup}>
-              <h4>Ürün</h4>
-              <Link href="#ozellikler">Özellikler</Link>
-              <Link href="/ayse-ali">Örnek Sayfa</Link>
-            </div>
-            <div className={styles.linkGroup}>
-              <h4>Kurumsal</h4>
-              <Link href="/gizlilik">Gizlilik Politikası</Link>
-              <Link href="/sartlar">Kullanım Koşulları</Link>
-            </div>
-          </div>
-        </div>
-        <div className={styles.footerBottom}>
-          © 2024 Sonsuz Aşk. Sevgiyle tasarlandı.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
