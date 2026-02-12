@@ -1,0 +1,266 @@
+.adminLayout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: var(--font-sans);
+}
+
+.sidebar {
+    width: 260px;
+    background: white;
+    border-right: 1px solid var(--border-pink);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+}
+
+.mainContent {
+    flex: 1;
+    margin-left: 260px;
+    padding: 40px;
+}
+
+.logoArea {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--primary-rose);
+    font-weight: 700;
+    margin-bottom: 40px;
+    padding-left: 10px;
+}
+
+.navMenu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.navItem:hover {
+    background: var(--bg-soft-pink);
+    color: var(--primary-rose);
+}
+
+.navItemActive {
+    background: var(--primary-rose);
+    color: white !important;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.statCard {
+    background: white;
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+}
+
+.statValue {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 10px 0 5px;
+}
+
+.statLabel {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.iconWrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.section {
+    background: white;
+    padding: 32px;
+    border-radius: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.sectionTitle {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: #1e293b;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.pageBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pageBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pageInfo {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+.tableContainer {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table th {
+    background: #f8fafc;
+    padding: 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.premiumBadge {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.freeBadge {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.expiredBadge {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.limitedBadge {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.refForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.refInputGroup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.refActions {
+    display: flex;
+    gap: 10px;
+}
+
+.input {
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid var(--border-pink);
+    outline: none;
+    flex: 1;
+}
+
+.btn {
+    padding: 10px 25px;
+    border-radius: 10px;
+    border: none;
+    background: var(--primary-rose);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btnOutline {
+    background: white;
+    color: var(--primary-rose);
+    border: 1px solid var(--primary-rose);
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    color: var(--primary-rose);
+    font-weight: 600;
+}

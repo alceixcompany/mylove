@@ -1,0 +1,170 @@
+.mainContainer {
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 0 100px rgba(0, 0, 0, 0.05);
+  min-height: 100vh;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.galleryItemLarge {
+  grid-column: span 2;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.galleryItem {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.galleryImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.footer {
+  text-align: center;
+  padding: 80px 20px 140px;
+}
+
+.footerBrand {
+  font-family: var(--font-script);
+  font-size: 3.5rem;
+  color: var(--primary-rose);
+}
+
+.footerSymbol {
+  font-size: 2rem;
+  color: #FCE4E8;
+  margin: 20px 0;
+}
+
+.footerText {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+
+/* Protection Gate Styles */
+.gateOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #FFEDF0;
+  /* Soft romantic background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.gateCard {
+  background: white;
+  padding: 40px;
+  border-radius: 40px;
+  box-shadow: 0 30px 60px rgba(214, 148, 159, 0.2);
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gateIcon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.gateCard h2 {
+  font-family: var(--font-serif);
+  color: var(--primary-rose);
+  margin-bottom: 15px;
+}
+
+.gateCard p {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+
+.gateQuestion {
+  background: #fdf2f4;
+  padding: 15px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+}
+
+.gateForm {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.gateInput,
+.gateInputError {
+  padding: 15px 20px;
+  border-radius: 100px;
+  border: 2px solid #f0f0f0;
+  outline: none;
+  font-size: 1rem;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.gateInput:focus {
+  border-color: var(--primary-rose);
+}
+
+.gateInputError {
+  border-color: #ff4d4d;
+  background: #fffafa;
+}
+
+.gateBtn {
+  background: var(--primary-rose);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 100px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(214, 148, 159, 0.3);
+  transition: all 0.3s;
+}
+
+.gateBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(214, 148, 159, 0.4);
+}
+
+.errorHint {
+  color: #ff4d4d;
+  font-size: 0.8rem;
+  margin-top: -5px;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

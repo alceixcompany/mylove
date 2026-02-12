@@ -1,0 +1,45 @@
+.container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    /* İçeriğin üzerinde ama butonların altında olması için ideal */
+    overflow: hidden;
+}
+
+.heart {
+    position: absolute;
+    color: var(--primary-rose);
+    bottom: -50px;
+    filter: drop-shadow(0 0 5px rgba(214, 148, 159, 0.2));
+    animation: floatUpAndSway linear infinite;
+    will-change: transform, opacity;
+}
+
+@keyframes floatUpAndSway {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: inherit;
+    }
+
+    50% {
+        /* Orta noktada hafifçe yana kaydır */
+        transform: translateY(-50vh) translateX(calc(var(--drift) / 2)) rotate(180deg);
+    }
+
+    90% {
+        opacity: inherit;
+    }
+
+    100% {
+        transform: translateY(-110vh) translateX(var(--drift)) rotate(360deg);
+        opacity: 0;
+    }
+}

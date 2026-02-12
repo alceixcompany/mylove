@@ -1,0 +1,109 @@
+.hero {
+    padding: 80px 20px 60px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    background: linear-gradient(180deg, rgba(255, 244, 246, 1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.heroImageWrapper {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 8px solid white;
+    box-shadow: 0 15px 50px rgba(214, 148, 159, 0.25);
+    margin-bottom: 40px;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.heroImageWrapper:hover {
+    transform: scale(1.05) rotate(2deg);
+}
+
+.heroImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.title {
+    font-size: clamp(2.2rem, 8vw, 3.2rem);
+    line-height: 1.1;
+    color: var(--primary-rose);
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 25px;
+}
+
+.countdownTitle {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    color: var(--primary-rose);
+    margin-top: 20px;
+    font-style: italic;
+}
+
+.countdown {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0 30px;
+}
+
+.countdownItem {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 15px;
+    min-width: 65px;
+    box-shadow: 0 5px 15px rgba(214, 148, 159, 0.1);
+}
+
+.countNumber {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--primary-rose);
+}
+
+.countLabel {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.quote {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    max-width: 85%;
+    line-height: 1.6;
+    margin: 20px 0 30px;
+}
+
+.ctaButton {
+    background: var(--primary-rose);
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    border-radius: 100px;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(214, 148, 159, 0.3);
+    transition: all 0.3s ease;
+}
+
+.ctaButton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(214, 148, 159, 0.4);
+}

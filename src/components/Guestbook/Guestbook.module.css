@@ -1,0 +1,78 @@
+.section {
+    padding: 60px 20px;
+    background: rgba(214, 148, 159, 0.03);
+}
+
+.inputArea {
+    background: white;
+    border-radius: 30px;
+    padding: 40px 25px;
+    box-shadow: var(--shadow-soft);
+    text-align: center;
+    position: relative;
+    border: 1px dashed var(--primary-rose);
+    margin-bottom: 40px;
+}
+
+.quoteMark {
+    font-size: 3rem;
+    color: #FCE4E8;
+    line-height: 1;
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.textarea {
+    width: 100%;
+    border: none;
+    font-family: var(--font-script);
+    font-size: 1.8rem;
+    color: var(--text-dark);
+    text-align: center;
+    resize: none;
+    background: transparent;
+    outline: none;
+    padding: 30px 0 20px;
+}
+
+.submitBtn {
+    background: var(--primary-rose);
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 100px;
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(214, 148, 159, 0.2);
+}
+
+.messagesList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.messageCard {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    border-left: 4px solid var(--primary-rose);
+}
+
+.messageText {
+    font-style: italic;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+}
+
+.messageAuthor {
+    font-size: 0.8rem;
+    color: var(--primary-rose);
+    font-weight: 600;
+    text-transform: uppercase;
+}
