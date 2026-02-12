@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, increment } from 'firebase/firestore';
@@ -15,7 +15,7 @@ import {
   HiOutlineSparkles
 } from "react-icons/hi2";
 
-export default function LandingPage() {
+function LandingPageContent() {
   const searchParams = useSearchParams();
   const refCode = searchParams.get('ref');
 
@@ -33,6 +33,7 @@ export default function LandingPage() {
       trackRef();
     }
   }, [refCode]);
+
   return (
     <div className={styles.landingWrapper}>
       <FloatingHearts />
@@ -200,5 +201,13 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={<div>Yükleniyor...</div>}>
+      <LandingPageContent />
+    </Suspense>
   );
 }
