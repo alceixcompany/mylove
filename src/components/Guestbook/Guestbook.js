@@ -1,11 +1,11 @@
 "use client";
 import styles from './Guestbook.module.css';
 
-const Guestbook = ({ initialMessages = [] }) => {
+const Guestbook = ({ title = "Aşk Notları", subtitle = "Kalbimizden dökülen kelimeler", initialMessages = [] }) => {
     return (
         <section className={styles.section}>
-            <h2 className="section-title">Aşk Notları</h2>
-            <p className="section-subtitle">Kalbimizden dökülen kelimeler</p>
+            <h2 className="section-title">{title}</h2>
+            <p className="section-subtitle">{subtitle}</p>
 
             <div className={styles.inputArea}>
                 <div className={styles.quoteMark}>“</div>

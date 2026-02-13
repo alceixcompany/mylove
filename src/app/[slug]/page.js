@@ -45,11 +45,19 @@ export default async function CouplePage({ params }) {
 
     const renderSection = (id) => {
         switch (id) {
-            case 'Hero': return <Hero key={id} title={userData.heroTitle} subtitle={userData.heroSubtitle} imageUrl={userData.heroImage} quote={userData.heroQuote} />;
-            case 'Timeline': return <Timeline key={id} events={userData.storyEvents || []} />;
+            case 'Hero': return <Hero key={id} title={userData.heroTitle} subtitle={userData.heroSubtitle} imageUrl={userData.heroImage} quote={userData.heroQuote} countdownDate={userData.countdownDate} countdownTitle={userData.countdownTitle} />;
+            case 'Timeline': return <Timeline key={id} title={userData.timelineTitle} subtitle={userData.timelineSubtitle} events={userData.storyEvents || []} />;
             case 'Venue': return <Venue key={id} name={venueData.name} address={venueData.address} time={venueData.time} imageUrl={venueData.imageUrl} />;
-            case 'Guestbook': return <Guestbook key={id} initialMessages={userData.guestMessages || []} />;
-            case 'RSVP': return <RSVP key={id} />;
+            case 'Guestbook': return <Guestbook key={id} title={userData.guestbookTitle} subtitle={userData.guestbookSubtitle} initialMessages={userData.guestMessages || []} />;
+            case 'RSVP': return <RSVP
+                key={id}
+                title={userData.rsvpTitle}
+                subtitle={userData.rsvpSubtitle}
+                yesOption={userData.rsvpYesOption}
+                noOption={userData.rsvpNoOption}
+                optionsTitle={userData.rsvpOptionsTitle}
+                options={userData.rsvpOptions}
+            />;
             default: return null;
         }
     };

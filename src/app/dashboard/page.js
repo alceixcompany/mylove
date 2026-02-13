@@ -180,7 +180,26 @@ export default function Dashboard() {
         songUrl: '',
         isProtected: false,
         protectionQuestion: '',
-        protectionAnswer: ''
+        protectionAnswer: '',
+        protectionAnswer: '',
+        guestMessages: [],
+        guestbookTitle: 'Aşk Notları',
+        guestbookTitle: 'Aşk Notları',
+        guestbookSubtitle: 'Kalbimizden dökülen kelimeler',
+        rsvpTitle: 'Sevgilim Olur Musun?',
+        rsvpSubtitle: 'Bu özel günü beraber geçirelim',
+        rsvpYesOption: 'Evet, kesinlikle!',
+        rsvpNoOption: 'Maalesef...',
+        rsvpOptionsTitle: 'Akşam Planı Seçeneği',
+        rsvpOptions: [
+            { label: 'Romantik Bir Akşam Yemeği', value: 'dinner' },
+            { label: 'Yıldızlar Altında Sinema', value: 'cinema' },
+            { label: 'Sıcak Bir Ev Akşamı', value: 'home' }
+        ],
+        timelineTitle: 'Hikayemiz',
+        timelineSubtitle: 'Unutulmaz anılarımız',
+        countdownDate: new Date('2026-02-14').toISOString(),
+        countdownTitle: "14 Şubat'a Kalan Zaman"
     });
 
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
@@ -234,7 +253,22 @@ export default function Dashboard() {
                             songUrl: data.songUrl || '',
                             isProtected: data.isProtected || false,
                             protectionQuestion: data.protectionQuestion || '',
-                            protectionAnswer: data.protectionAnswer || ''
+                            protectionQuestion: data.protectionQuestion || '',
+                            protectionAnswer: data.protectionAnswer || '',
+                            guestMessages: data.guestMessages || [],
+                            guestbookTitle: data.guestbookTitle || prev.guestbookTitle,
+                            guestbookTitle: data.guestbookTitle || prev.guestbookTitle,
+                            guestbookSubtitle: data.guestbookSubtitle || prev.guestbookSubtitle,
+                            rsvpTitle: data.rsvpTitle || prev.rsvpTitle,
+                            rsvpSubtitle: data.rsvpSubtitle || prev.rsvpSubtitle,
+                            rsvpYesOption: data.rsvpYesOption || prev.rsvpYesOption,
+                            rsvpNoOption: data.rsvpNoOption || prev.rsvpNoOption,
+                            rsvpOptionsTitle: data.rsvpOptionsTitle || prev.rsvpOptionsTitle,
+                            rsvpOptions: data.rsvpOptions || prev.rsvpOptions,
+                            timelineTitle: data.timelineTitle || prev.timelineTitle,
+                            timelineSubtitle: data.timelineSubtitle || prev.timelineSubtitle,
+                            countdownDate: data.countdownDate || prev.countdownDate,
+                            countdownTitle: data.countdownTitle || prev.countdownTitle
                         }));
                     }
                 } else {
@@ -270,6 +304,35 @@ export default function Dashboard() {
         setFormData(prev => ({ ...prev, storyEvents: newEvents }));
     };
 
+    const handleUpdateGuestMessage = (index, field, value) => {
+        const newMessages = [...formData.guestMessages];
+        newMessages[index] = { ...newMessages[index], [field]: value };
+        setFormData(prev => ({ ...prev, guestMessages: newMessages }));
+    };
+
+    const handleUpdateRsvpOption = (index, value) => {
+        const newOptions = [...formData.rsvpOptions];
+        newOptions[index] = { ...newOptions[index], label: value };
+        setFormData(prev => ({ ...prev, rsvpOptions: newOptions }));
+    };
+
+    const handleAddRsvpOption = () => {
+        setFormData(prev => ({
+            ...prev,
+            rsvpOptions: [...prev.rsvpOptions, { label: 'Yeni Seçenek', value: `option-${Date.now()}` }]
+        }));
+    };
+
+    const handleDeleteRsvpOption = (index) => {
+        const newOptions = formData.rsvpOptions.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, rsvpOptions: newOptions }));
+    };
+
+    const handleDeleteGuestMessage = (index) => {
+        const newMessages = formData.guestMessages.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, guestMessages: newMessages }));
+    };
+
     const moveSection = (index, direction) => {
         const newOrder = [...sectionOrder];
         const newIndex = index + direction;
@@ -300,6 +363,29 @@ export default function Dashboard() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleGalleryImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setSaving(true);
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+            const url = await uploadImage(fd);
+            const newImages = [...formData.galleryImages, url];
+            handleUpdateField('galleryImages', newImages);
+            setMessage('Resim başarıyla galeriye eklendi!');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteGalleryImage = (index) => {
+        const newImages = formData.galleryImages.filter((_, i) => i !== index);
+        handleUpdateField('galleryImages', newImages);
     };
 
     const handleYoutubeUrlChange = async (url) => {
@@ -367,12 +453,19 @@ export default function Dashboard() {
 
     const renderComponent = (id) => {
         switch (id) {
-            case 'Hero': return <Hero title={formData.heroTitle} subtitle={formData.heroSubtitle} imageUrl={formData.heroImage} quote={formData.heroQuote} />;
-            case 'Timeline': return <Timeline events={formData.storyEvents} />;
+            case 'Hero': return <Hero title={formData.heroTitle} subtitle={formData.heroSubtitle} imageUrl={formData.heroImage} quote={formData.heroQuote} countdownDate={formData.countdownDate} countdownTitle={formData.countdownTitle} />;
+            case 'Timeline': return <Timeline title={formData.timelineTitle} subtitle={formData.timelineSubtitle} events={formData.storyEvents} />;
             case 'Venue': return <Venue name={formData.venueName} address={formData.venueAddress} time={formData.venueTime} imageUrl={formData.venueImage} />;
             case 'Gallery': return <Gallery title={formData.galleryTitle} subtitle={formData.gallerySubtitle} images={formData.galleryImages} />;
-            case 'Guestbook': return <Guestbook initialMessages={[{ text: "Örnek Mesaj", author: "Ziyaretçi" }]} />;
-            case 'RSVP': return <RSVP />;
+            case 'Guestbook': return <Guestbook title={formData.guestbookTitle} subtitle={formData.guestbookSubtitle} initialMessages={formData.guestMessages || []} />;
+            case 'RSVP': return <RSVP
+                title={formData.rsvpTitle}
+                subtitle={formData.rsvpSubtitle}
+                yesOption={formData.rsvpYesOption}
+                noOption={formData.rsvpNoOption}
+                optionsTitle={formData.rsvpOptionsTitle}
+                options={formData.rsvpOptions}
+            />;
             case 'Music': return (
                 <MusicPlayer
                     songTitle={formData.songTitle}
@@ -441,7 +534,7 @@ export default function Dashboard() {
                             <HiOutlineLink /> <span>Sayfa Linkiniz:</span>
                         </div>
                         <div className={editorStyles.slugInputRow}>
-                            <span>ask.com/</span>
+                            <span>askarsivi.com/</span>
                             <input
                                 type="text"
                                 value={slug}
@@ -480,6 +573,13 @@ export default function Dashboard() {
                             <input type="text" value={formData.heroSubtitle} onChange={e => handleUpdateField('heroSubtitle', e.target.value)} className={editorStyles.input} />
                             <label className={editorStyles.label}>Sözünüz</label>
                             <textarea value={formData.heroQuote} onChange={e => handleUpdateField('heroQuote', e.target.value)} className={editorStyles.textarea} />
+
+                            <label className={editorStyles.label}>Geri Sayım Başlığı</label>
+                            <input type="text" value={formData.countdownTitle} onChange={e => handleUpdateField('countdownTitle', e.target.value)} className={editorStyles.input} />
+
+                            <label className={editorStyles.label}>Hedef Tarih</label>
+                            <input type="datetime-local" value={formData.countdownDate ? new Date(formData.countdownDate).toISOString().slice(0, 16) : ''} onChange={e => handleUpdateField('countdownDate', new Date(e.target.value).toISOString())} className={editorStyles.input} />
+
                             <label className={editorStyles.label}>Kapak Fotoğrafı</label>
                             <input type="file" onChange={e => handleFileUpload(e, 'heroImage')} className={editorStyles.input} />
                         </div>
@@ -488,12 +588,27 @@ export default function Dashboard() {
                     {activeEditor === 'Timeline' && (
                         <div className={editorStyles.sidebarItem}>
                             <h3>Hikayemiz</h3>
+                            <label className={editorStyles.label}>Başlık</label>
+                            <input type="text" value={formData.timelineTitle} onChange={e => handleUpdateField('timelineTitle', e.target.value)} className={editorStyles.input} />
+
+                            <label className={editorStyles.label}>Alt Başlık</label>
+                            <input type="text" value={formData.timelineSubtitle} onChange={e => handleUpdateField('timelineSubtitle', e.target.value)} className={editorStyles.input} />
+
+                            <h4 style={{ marginTop: '20px', marginBottom: '10px', fontSize: '0.9rem' }}>Olaylar</h4>
                             {formData.storyEvents.map((ev, i) => (
                                 <div key={i} className={editorStyles.storyItemBox}>
                                     <strong>{i + 1}. Olay</strong>
-                                    <input type="text" value={ev.date} onChange={e => handleUpdateStory(i, 'date', e.target.value)} className={editorStyles.input} placeholder="Tarih" />
+
+                                    <label className={editorStyles.label} style={{ marginTop: '10px' }}>Tarih / Zaman</label>
+                                    <input type="text" value={ev.date} onChange={e => handleUpdateStory(i, 'date', e.target.value)} className={editorStyles.input} placeholder="Örn: Bahar 2019" />
+
+                                    <label className={editorStyles.label}>Başlık</label>
                                     <input type="text" value={ev.title} onChange={e => handleUpdateStory(i, 'title', e.target.value)} className={editorStyles.input} placeholder="Başlık" />
-                                    <textarea value={ev.description} onChange={e => handleUpdateStory(i, 'description', e.target.value)} className={editorStyles.textarea} placeholder="Açıklama" />
+
+                                    <label className={editorStyles.label}>Açıklama</label>
+                                    <textarea value={ev.description} onChange={e => handleUpdateStory(i, 'description', e.target.value)} className={editorStyles.textarea} placeholder="O anı anlatın..." />
+
+                                    <label className={editorStyles.label}>Fotoğraf</label>
                                     <input type="file" onChange={e => handleFileUpload(e, 'image', i)} className={editorStyles.input} />
                                 </div>
                             ))}
@@ -519,7 +634,140 @@ export default function Dashboard() {
                             <h3>Galeri Ayarları</h3>
                             <label className={editorStyles.label}>Başlık</label>
                             <input type="text" value={formData.galleryTitle} onChange={e => handleUpdateField('galleryTitle', e.target.value)} className={editorStyles.input} />
-                            <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '10px' }}>Resim yönetimi yakında eklenecek.</p>
+
+                            <label className={editorStyles.label}>Alt Başlık</label>
+                            <input type="text" value={formData.gallerySubtitle} onChange={e => handleUpdateField('gallerySubtitle', e.target.value)} className={editorStyles.input} />
+
+                            <h4 style={{ marginTop: '20px', marginBottom: '10px', fontSize: '0.9rem' }}>Galerideki Resimler</h4>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '15px' }}>
+                                {formData.galleryImages.map((img, i) => (
+                                    <div key={i} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                        <img src={img} alt={`Gallery ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                                        <button
+                                            onClick={() => handleDeleteGalleryImage(i)}
+                                            style={{
+                                                position: 'absolute', top: '-5px', right: '-5px',
+                                                background: '#ff4d4f', color: 'white', border: 'none',
+                                                borderRadius: '50%', width: '20px', height: '20px',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px'
+                                            }}
+                                            title="Sil"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <label className={editorStyles.label} style={{ cursor: 'pointer', display: 'inline-block', background: '#f0f0f0', padding: '8px 12px', borderRadius: '4px', fontSize: '0.9rem' }}>
+                                + Yeni Resim Ekle
+                                <input type="file" onChange={handleGalleryImageUpload} style={{ display: 'none' }} />
+                            </label>
+                        </div>
+                    )}
+
+                    {activeEditor === 'Guestbook' && (
+                        <div className={editorStyles.sidebarItem}>
+
+                            <h3>Ziyaretçi Defteri</h3>
+                            <label className={editorStyles.label}>Başlık</label>
+                            <input type="text" value={formData.guestbookTitle} onChange={e => handleUpdateField('guestbookTitle', e.target.value)} className={editorStyles.input} />
+                            <label className={editorStyles.label}>Alt Başlık</label>
+                            <input type="text" value={formData.guestbookSubtitle} onChange={e => handleUpdateField('guestbookSubtitle', e.target.value)} className={editorStyles.input} />
+
+                            <p className={editorStyles.sidebarHint} style={{ marginTop: '20px' }}>Ziyaretçilerinizin bıraktığı notları buradan düzenleyebilir veya silebilirsiniz.</p>
+
+                            {formData.guestMessages && formData.guestMessages.length > 0 ? (
+                                formData.guestMessages.map((msg, i) => (
+                                    <div key={i} className={editorStyles.storyItemBox} style={{ position: 'relative' }}>
+                                        <button
+                                            onClick={() => handleDeleteGuestMessage(i)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '10px',
+                                                top: '10px',
+                                                background: '#ff4d4f',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                padding: '4px 8px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.8rem'
+                                            }}
+                                            title="Sil"
+                                        >
+                                            Sil
+                                        </button>
+                                        <strong>{i + 1}. Mesaj</strong>
+                                        <label className={editorStyles.label} style={{ marginTop: '20px' }}>Yazan</label>
+                                        <input
+                                            type="text"
+                                            value={msg.author}
+                                            onChange={e => handleUpdateGuestMessage(i, 'author', e.target.value)}
+                                            className={editorStyles.input}
+                                        />
+                                        <label className={editorStyles.label}>Mesaj</label>
+                                        <textarea
+                                            value={msg.text}
+                                            onChange={e => handleUpdateGuestMessage(i, 'text', e.target.value)}
+                                            className={editorStyles.textarea}
+                                            rows={3}
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '20px', color: '#888', background: '#f9f9f9', borderRadius: '8px' }}>
+                                    Henüz hiç mesaj yok.
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeEditor === 'RSVP' && (
+                        <div className={editorStyles.sidebarItem}>
+                            <h3>LCV Ayarları</h3>
+                            <label className={editorStyles.label}>Başlık</label>
+                            <input type="text" value={formData.rsvpTitle} onChange={e => handleUpdateField('rsvpTitle', e.target.value)} className={editorStyles.input} />
+
+                            <label className={editorStyles.label}>Alt Başlık</label>
+                            <input type="text" value={formData.rsvpSubtitle} onChange={e => handleUpdateField('rsvpSubtitle', e.target.value)} className={editorStyles.input} />
+
+                            <h4 style={{ marginTop: '20px', marginBottom: '10px', fontSize: '0.9rem' }}>Katılım Seçenekleri</h4>
+                            <label className={editorStyles.label}>"Evet" Metni</label>
+                            <input type="text" value={formData.rsvpYesOption} onChange={e => handleUpdateField('rsvpYesOption', e.target.value)} className={editorStyles.input} />
+
+                            <label className={editorStyles.label}>"Hayır" Metni</label>
+                            <input type="text" value={formData.rsvpNoOption} onChange={e => handleUpdateField('rsvpNoOption', e.target.value)} className={editorStyles.input} />
+
+                            <h4 style={{ marginTop: '20px', marginBottom: '10px', fontSize: '0.9rem' }}>Ekstra Seçenekler (Menü/Plan)</h4>
+                            <label className={editorStyles.label}>Seçenek Başlığı</label>
+                            <input type="text" value={formData.rsvpOptionsTitle} onChange={e => handleUpdateField('rsvpOptionsTitle', e.target.value)} className={editorStyles.input} />
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                                {formData.rsvpOptions.map((opt, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            value={opt.label}
+                                            onChange={e => handleUpdateRsvpOption(i, e.target.value)}
+                                            className={editorStyles.input}
+                                            style={{ marginBottom: 0 }}
+                                        />
+                                        <button
+                                            onClick={() => handleDeleteRsvpOption(i)}
+                                            style={{ background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '4px', padding: '0 10px', cursor: 'pointer' }}
+                                        >
+                                            Sil
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={handleAddRsvpOption}
+                                    style={{ background: '#f0f0f0', border: '1px dashed #ccc', padding: '8px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', color: '#666' }}
+                                >
+                                    + Yeni Seçenek Ekle
+                                </button>
+                            </div>
                         </div>
                     )}
 

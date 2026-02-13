@@ -30,7 +30,7 @@ export default function TeslimatIade() {
 
                     <h3 style={{ fontSize: '1.3rem', marginBottom: '10px', color: '#D6949F' }}>3. İade Süreci</h3>
                     <p style={{ marginBottom: '20px' }}>
-                        İade taleplerinizi destek@sonsuzask.com adresine iletebilirsiniz. Talebiniz incelendikten sonra, uygun görülmesi durumunda 7 iş günü içerisinde ödeme yaptığınız karta iade işlemi gerçekleştirilir.
+                        İade taleplerinizi destek@askarsivi.com adresine iletebilirsiniz. Talebiniz incelendikten sonra, uygun görülmesi durumunda 7 iş günü içerisinde ödeme yaptığınız karta iade işlemi gerçekleştirilir.
                     </p>
                 </div>
             </main>
