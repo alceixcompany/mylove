@@ -95,7 +95,12 @@ export default function AdminDashboard() {
     const [paymentFilter, setPaymentFilter] = useState('all');
 
     // Pagination states
-    const [currentPage, setCurrentPage] = useState(1);
+    const [pageState, setPageState] = useState({
+        overview: 1,
+        users: 1,
+        pages: 1,
+        referrals: 1
+    });
     const [newRefName, setNewRefName] = useState('');
     const [newRefDiscount, setNewRefDiscount] = useState('');
     const [newRefDiscountType, setNewRefDiscountType] = useState('percentage');
@@ -342,12 +347,43 @@ export default function AdminDashboard() {
     };
 
     // Pagination helper
-    const paginate = (data) => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginate = (data, page) => {
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
         return data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     };
 
     const totalPages = (data) => Math.ceil(data.length / ITEMS_PER_PAGE);
+
+    const setTabPage = (tab, page) => {
+        setPageState((prev) => ({ ...prev, [tab]: page }));
+    };
+
+    const renderPagination = (tab, data) => {
+        const currentPage = pageState[tab] || 1;
+        const pageCount = totalPages(data);
+
+        if (data.length <= ITEMS_PER_PAGE) return null;
+
+        return (
+            <div className={styles.pagination}>
+                <button
+                    disabled={currentPage === 1}
+                    onClick={() => setTabPage(tab, currentPage - 1)}
+                    className={styles.pageBtn}
+                >
+                    <HiOutlineChevronLeft />
+                </button>
+                <span className={styles.pageInfo}>{currentPage} / {pageCount}</span>
+                <button
+                    disabled={currentPage === pageCount}
+                    onClick={() => setTabPage(tab, currentPage + 1)}
+                    className={styles.pageBtn}
+                >
+                    <HiOutlineChevronRight />
+                </button>
+            </div>
+        );
+    };
 
     if (loading) return <div className={styles.loading}>Yükleniyor...</div>;
 
@@ -384,7 +420,7 @@ export default function AdminDashboard() {
                             <tr><th>Sayfa</th><th>Hit</th><th>Kullanıcı</th><th>Tarih</th></tr>
                         </thead>
                         <tbody>
-                            {pagesList.slice(0, 5).map(page => (
+                            {paginate(pagesList, pageState.overview).map(page => (
                                 <tr key={page.id}>
                                     <td><a href={`/${page.urlSlug}`} target="_blank" style={{ color: 'var(--primary-rose)', fontWeight: '600' }}>/{page.urlSlug}</a></td>
                                     <td>{page.hits || 0}</td>
@@ -395,6 +431,7 @@ export default function AdminDashboard() {
                         </tbody>
                     </table>
                 </div>
+                {renderPagination('overview', pagesList)}
             </div>
         </>
     );
@@ -405,7 +442,7 @@ export default function AdminDashboard() {
             if (paymentFilter === 'unpaid') return entry.paid !== true;
             return true;
         });
-        const currentData = paginate(data);
+        const currentData = paginate(data, pageState.users);
         return (
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
@@ -442,22 +479,33 @@ export default function AdminDashboard() {
                                             </span>
                                         </td>
                                         <td>
-                                            {page?.urlSlug ? (
-                                                <a href={`/${page.urlSlug}`} target="_blank" rel="noreferrer" className={styles.iconAction}>
-                                                    <HiOutlineEye /> Gozat
-                                                </a>
-                                            ) : (
-                                                <span className={styles.pageInfo}>Sayfa yok</span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <button
-                                                onClick={() => deleteUser(u.id)}
-                                                className={styles.dangerAction}
-                                                disabled={deletingUserId === u.id}
-                                            >
-                                                <HiOutlineTrash /> {deletingUserId === u.id ? 'Siliniyor...' : 'Sil'}
-                                            </button>
+                                            <div className={styles.rowActions}>
+                                                {page?.urlSlug ? (
+                                                    <a
+                                                        href={`/${page.urlSlug}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className={styles.iconAction}
+                                                        title="Gozat"
+                                                        aria-label="Gozat"
+                                                    >
+                                                        <HiOutlineEye />
+                                                    </a>
+                                                ) : (
+                                                    <span className={styles.iconActionDisabled} title="Sayfa yok" aria-hidden="true">
+                                                        <HiOutlineEye />
+                                                    </span>
+                                                )}
+                                                <button
+                                                    onClick={() => deleteUser(u.id)}
+                                                    className={styles.dangerAction}
+                                                    disabled={deletingUserId === u.id}
+                                                    title="Sil"
+                                                    aria-label="Sil"
+                                                >
+                                                    <HiOutlineTrash />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -465,20 +513,14 @@ export default function AdminDashboard() {
                         </tbody>
                     </table>
                 </div>
-                {data.length > ITEMS_PER_PAGE && (
-                    <div className={styles.pagination}>
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className={styles.pageBtn}><HiOutlineChevronLeft /></button>
-                        <span className={styles.pageInfo}>{currentPage} / {totalPages(data)}</span>
-                        <button disabled={currentPage === totalPages(data)} onClick={() => setCurrentPage(prev => prev + 1)} className={styles.pageBtn}><HiOutlineChevronRight /></button>
-                    </div>
-                )}
+                {renderPagination('users', data)}
             </div>
         );
     };
 
     const renderPages = () => {
         const data = pagesList;
-        const currentData = paginate(data);
+        const currentData = paginate(data, pageState.pages);
         return (
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
@@ -500,20 +542,14 @@ export default function AdminDashboard() {
                         </tbody>
                     </table>
                 </div>
-                {data.length > ITEMS_PER_PAGE && (
-                    <div className={styles.pagination}>
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className={styles.pageBtn}><HiOutlineChevronLeft /></button>
-                        <span className={styles.pageInfo}>{currentPage} / {totalPages(data)}</span>
-                        <button disabled={currentPage === totalPages(data)} onClick={() => setCurrentPage(prev => prev + 1)} className={styles.pageBtn}><HiOutlineChevronRight /></button>
-                    </div>
-                )}
+                {renderPagination('pages', data)}
             </div>
         );
     };
 
     const renderReferrals = () => {
         const data = referrals;
-        const currentData = paginate(data);
+        const currentData = paginate(data, pageState.referrals);
         return (
             <div className={styles.section}>
                     <div className={styles.sectionHeader}>
@@ -570,13 +606,7 @@ export default function AdminDashboard() {
                         </tbody>
                     </table>
                 </div>
-                {data.length > ITEMS_PER_PAGE && (
-                    <div className={styles.pagination}>
-                        <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className={styles.pageBtn}><HiOutlineChevronLeft /></button>
-                        <span className={styles.pageInfo}>{currentPage} / {totalPages(data)}</span>
-                        <button disabled={currentPage === totalPages(data)} onClick={() => setCurrentPage(prev => prev + 1)} className={styles.pageBtn}><HiOutlineChevronRight /></button>
-                    </div>
-                )}
+                {renderPagination('referrals', data)}
             </div>
         );
     };
@@ -710,11 +740,11 @@ export default function AdminDashboard() {
             <aside className={styles.sidebar}>
                 <div className={styles.logoArea}>Sonsuz Aşk</div>
                 <nav className={styles.navMenu}>
-                    <button onClick={() => { setActiveTab('overview'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'overview' ? styles.navItemActive : ''}`}><HiOutlineChartBar /> Genel Bakış</button>
-                    <button onClick={() => { setActiveTab('users'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'users' ? styles.navItemActive : ''}`}><HiOutlineUsers /> Kullanıcılar</button>
-                    <button onClick={() => { setActiveTab('pages'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'pages' ? styles.navItemActive : ''}`}><HiOutlineRectangleStack /> Sayfalar</button>
-                    <button onClick={() => { setActiveTab('referrals'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'referrals' ? styles.navItemActive : ''}`}><HiOutlineLink /> Referanslar</button>
-                    <button onClick={() => { setActiveTab('payments'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'payments' ? styles.navItemActive : ''}`}><HiOutlineCog6Tooth /> Ödeme</button>
+                    <button onClick={() => setActiveTab('overview')} className={`${styles.navItem} ${activeTab === 'overview' ? styles.navItemActive : ''}`}><HiOutlineChartBar /> Genel Bakış</button>
+                    <button onClick={() => setActiveTab('users')} className={`${styles.navItem} ${activeTab === 'users' ? styles.navItemActive : ''}`}><HiOutlineUsers /> Kullanıcılar</button>
+                    <button onClick={() => setActiveTab('pages')} className={`${styles.navItem} ${activeTab === 'pages' ? styles.navItemActive : ''}`}><HiOutlineRectangleStack /> Sayfalar</button>
+                    <button onClick={() => setActiveTab('referrals')} className={`${styles.navItem} ${activeTab === 'referrals' ? styles.navItemActive : ''}`}><HiOutlineLink /> Referanslar</button>
+                    <button onClick={() => setActiveTab('payments')} className={`${styles.navItem} ${activeTab === 'payments' ? styles.navItemActive : ''}`}><HiOutlineCog6Tooth /> Ödeme</button>
                 </nav>
                 <div style={{ marginTop: 'auto' }}>
                     <button onClick={() => router.push('/dashboard')} className={styles.navItem}><HiOutlineChevronLeft /> Editöre Dön</button>
