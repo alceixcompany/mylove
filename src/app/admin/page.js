@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { db, auth } from '@/lib/firebase';
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import styles from './admin.module.css';
@@ -20,11 +19,12 @@ import {
     HiOutlineCog6Tooth,
     HiOutlineCreditCard,
     HiOutlineKey,
-    HiOutlineServerStack
+    HiOutlineServerStack,
+    HiOutlineEye,
+    HiOutlineFunnel
 } from "react-icons/hi2";
 
 const ITEMS_PER_PAGE = 10;
-const REFERRAL_CODE_LENGTH = 6;
 const DEFAULT_PAYMENT_SETTINGS = {
     iyzico: {
         active: true,
@@ -42,9 +42,24 @@ const DEFAULT_PAYMENT_SETTINGS = {
     appUrl: ''
 };
 
-function buildReferralCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({ length: REFERRAL_CODE_LENGTH }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+function formatDateValue(value) {
+    if (!value) return '-';
+
+    let date = null;
+
+    if (typeof value?.toDate === 'function') {
+        date = value.toDate();
+    } else if (typeof value === 'string' || typeof value === 'number') {
+        date = new Date(value);
+    } else if (typeof value === 'object' && typeof value.seconds === 'number') {
+        date = new Date(value.seconds * 1000);
+    }
+
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return '-';
+    }
+
+    return date.toLocaleString('tr-TR');
 }
 
 function formatReferralDiscount(ref, currency = 'TRY') {
@@ -75,6 +90,9 @@ export default function AdminDashboard() {
     const [paymentSettingsSaving, setPaymentSettingsSaving] = useState(false);
     const [paymentMessage, setPaymentMessage] = useState('');
     const [paymentError, setPaymentError] = useState('');
+    const [dataError, setDataError] = useState('');
+    const [deletingUserId, setDeletingUserId] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState('all');
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -95,7 +113,7 @@ export default function AdminDashboard() {
                     return;
                 }
                 setUser(currentUser);
-                fetchData();
+                fetchData(currentUser);
                 fetchPaymentSettings(currentUser);
             } else {
                 router.push('/login');
@@ -104,23 +122,29 @@ export default function AdminDashboard() {
         return () => unsubscribe();
     }, []);
 
-    const fetchData = async () => {
+    const fetchData = async (currentUser = user || auth.currentUser) => {
         setLoading(true);
+        setDataError('');
         try {
-            const usersSnap = await getDocs(collection(db, "users"));
-            const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (!currentUser) return;
+            const currentToken = await currentUser.getIdToken();
+            const response = await fetch('/api/admin/dashboard', {
+                headers: { Authorization: `Bearer ${currentToken}` }
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Admin verileri alinamadi.');
+            }
+
+            const users = result.data.users || [];
+            const pages = result.data.pages || [];
+            const refs = result.data.referrals || [];
+            const payments = result.data.payments || [];
+
             setUsersList(users);
-
-            const pagesSnap = await getDocs(collection(db, "pages"));
-            const pages = pagesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setPagesList(pages);
-
-            const refsSnap = await getDocs(collection(db, "referrals"));
-            const refs = refsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setReferrals(refs);
-
-            const paymentsSnap = await getDocs(collection(db, "payments"));
-            const payments = paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             const totalHits = pages.reduce((acc, curr) => acc + (curr.hits || 0), 0);
             const paidRevenue = payments
@@ -134,7 +158,7 @@ export default function AdminDashboard() {
                 totalPages: pages.length
             });
         } catch (error) {
-            console.error("Data fetch error:", error);
+            setDataError(error.message || 'Admin verileri alinamadi.');
         } finally {
             setLoading(false);
         }
@@ -238,31 +262,30 @@ export default function AdminDashboard() {
             return;
         }
 
-        const refCode = buildReferralCode();
-        const displayDiscount = newRefDiscountType === 'percentage'
-            ? `%${amount}`
-            : `${amount} ${paymentSettings.package.currency}`;
-        const payload = {
-            name: newRefName,
-            code: refCode,
-            clicks: 0,
-            conversions: 0,
-            discount: displayDiscount,
-            discountType: newRefDiscountType,
-            amount,
-            usageLimit: newRefLimit ? parseInt(newRefLimit, 10) : null,
-            expiryDate: newRefExpiry || null,
-            usageCount: 0,
-            usedCount: 0,
-            isActive: true,
-            createdAt: new Date().toISOString()
-        };
-
         try {
-            await Promise.all([
-                setDoc(doc(db, "referrals", refCode), payload),
-                setDoc(doc(db, "coupons", refCode), payload)
-            ]);
+            const token = await user.getIdToken();
+            const response = await fetch('/api/admin/referrals', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: newRefName,
+                    amount,
+                    discountType: newRefDiscountType,
+                    usageLimit: newRefLimit ? parseInt(newRefLimit, 10) : null,
+                    expiryDate: newRefExpiry || null,
+                    currency: paymentSettings.package.currency
+                })
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Referans kodu olusturulamadi.');
+            }
+
+            setReferralMessage(`Referans kodu olusturuldu: ${result.data.code}`);
         } catch (error) {
             setReferralError(error.message || 'Referans kodu olusturulamadi.');
             return;
@@ -273,16 +296,49 @@ export default function AdminDashboard() {
         setNewRefDiscountType('percentage');
         setNewRefLimit('');
         setNewRefExpiry('');
-        setReferralMessage(`Referans kodu olusturuldu: ${refCode}`);
         fetchData();
     };
 
     const deleteReferral = async (id) => {
-        await Promise.all([
-            deleteDoc(doc(db, "referrals", id)),
-            deleteDoc(doc(db, "coupons", id))
-        ]);
+        const token = await user.getIdToken();
+        const response = await fetch(`/api/admin/referrals/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            setReferralError(result.message || 'Referans kodu silinemedi.');
+            return;
+        }
+
         fetchData();
+    };
+
+    const deleteUser = async (userId) => {
+        if (!user || !window.confirm('Bu kullanici ve ilgili verileri silinsin mi?')) return;
+
+        setDeletingUserId(userId);
+        setDataError('');
+
+        try {
+            const token = await user.getIdToken();
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Kullanici silinemedi.');
+            }
+
+            fetchData();
+        } catch (error) {
+            setDataError(error.message || 'Kullanici silinemedi.');
+        } finally {
+            setDeletingUserId('');
+        }
     };
 
     // Pagination helper
@@ -333,7 +389,7 @@ export default function AdminDashboard() {
                                     <td><a href={`/${page.urlSlug}`} target="_blank" style={{ color: 'var(--primary-rose)', fontWeight: '600' }}>/{page.urlSlug}</a></td>
                                     <td>{page.hits || 0}</td>
                                     <td>{page.userId?.substring(0, 8)}...</td>
-                                    <td>{new Date(page.updatedAt || Date.now()).toLocaleDateString('tr-TR')}</td>
+                                    <td>{formatDateValue(page.updatedAt)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -344,25 +400,68 @@ export default function AdminDashboard() {
     );
 
     const renderUsers = () => {
-        const data = usersList;
+        const data = usersList.filter((entry) => {
+            if (paymentFilter === 'paid') return entry.paid === true;
+            if (paymentFilter === 'unpaid') return entry.paid !== true;
+            return true;
+        });
         const currentData = paginate(data);
         return (
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Kayıtlı Kullanıcılar</h2>
-                    <span className={styles.pageInfo}>{data.length} Toplam</span>
+                    <div>
+                        <h2 className={styles.sectionTitle}>Kayıtlı Kullanıcılar</h2>
+                        <span className={styles.pageInfo}>{data.length} Toplam</span>
+                    </div>
+                    <div className={styles.filterGroup}>
+                        <span className={styles.filterLabel}><HiOutlineFunnel /> Odeme</span>
+                        <button onClick={() => setPaymentFilter('all')} className={`${styles.filterBtn} ${paymentFilter === 'all' ? styles.filterBtnActive : ''}`}>Tumu</button>
+                        <button onClick={() => setPaymentFilter('paid')} className={`${styles.filterBtn} ${paymentFilter === 'paid' ? styles.filterBtnActive : ''}`}>Odedi</button>
+                        <button onClick={() => setPaymentFilter('unpaid')} className={`${styles.filterBtn} ${paymentFilter === 'unpaid' ? styles.filterBtnActive : ''}`}>Bekliyor</button>
+                    </div>
                 </div>
+                {dataError && <div className={styles.errorBox}>{dataError}</div>}
                 <div className={styles.tableContainer}>
                     <table className={styles.table}>
-                        <thead><tr><th>E-posta</th><th>Son Giriş</th><th>Giriş Sayısı</th></tr></thead>
+                        <thead><tr><th>E-posta</th><th>Kayit / Son Giris</th><th>Odeme</th><th>Sayfa</th><th>Sil</th></tr></thead>
                         <tbody>
-                            {currentData.map(u => (
-                                <tr key={u.id}>
-                                    <td>{u.email}</td>
-                                    <td>{u.lastLogin ? new Date(u.lastLogin).toLocaleString('tr-TR') : '-'}</td>
-                                    <td>{u.loginCount || 1}</td>
-                                </tr>
-                            ))}
+                            {currentData.map(u => {
+                                const page = pagesList.find((entry) => entry.userId === u.id);
+                                return (
+                                    <tr key={u.id}>
+                                        <td>{u.email}</td>
+                                        <td>
+                                            <div className={styles.metaStack}>
+                                                <span>Kayit: {formatDateValue(u.createdAt)}</span>
+                                                <span>Son giris: {formatDateValue(u.lastLogin)}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`${styles.badge} ${u.paid === true ? styles.premiumBadge : styles.freeBadge}`}>
+                                                {u.paid === true ? 'Odedi' : 'Bekliyor'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {page?.urlSlug ? (
+                                                <a href={`/${page.urlSlug}`} target="_blank" rel="noreferrer" className={styles.iconAction}>
+                                                    <HiOutlineEye /> Gozat
+                                                </a>
+                                            ) : (
+                                                <span className={styles.pageInfo}>Sayfa yok</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <button
+                                                onClick={() => deleteUser(u.id)}
+                                                className={styles.dangerAction}
+                                                disabled={deletingUserId === u.id}
+                                            >
+                                                <HiOutlineTrash /> {deletingUserId === u.id ? 'Siliniyor...' : 'Sil'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -417,9 +516,9 @@ export default function AdminDashboard() {
         const currentData = paginate(data);
         return (
             <div className={styles.section}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Referans Bağlantıları</h2>
-                </div>
+                    <div className={styles.sectionHeader}>
+                        <h2 className={styles.sectionTitle}>Referans Bağlantıları</h2>
+                    </div>
 
                 {referralMessage && <div className={styles.successBox}>{referralMessage}</div>}
                 {referralError && <div className={styles.errorBox}>{referralError}</div>}
@@ -625,6 +724,7 @@ export default function AdminDashboard() {
 
             {/* Main Content */}
             <main className={styles.mainContent}>
+                {dataError && activeTab === 'overview' && <div className={styles.errorBox}>{dataError}</div>}
                 {activeTab === 'overview' && renderOverview()}
                 {activeTab === 'users' && renderUsers()}
                 {activeTab === 'pages' && renderPages()}

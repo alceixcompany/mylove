@@ -160,6 +160,67 @@
     color: #94a3b8;
 }
 
+.metaStack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.filterGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filterLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.filterBtn {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.filterBtnActive {
+    border-color: var(--primary-rose);
+    background: #fff1f2;
+    color: var(--primary-rose);
+}
+
+.iconAction,
+.dangerAction {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.iconAction {
+    color: var(--primary-rose);
+}
+
+.dangerAction {
+    color: #b91c1c;
+}
+
 .tableContainer {
     overflow-x: auto;
 }
