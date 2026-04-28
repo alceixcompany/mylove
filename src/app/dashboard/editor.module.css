@@ -45,6 +45,9 @@
     border-radius: 8px;
     border: 1px solid var(--border-pink);
     transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .liveLink:hover {
@@ -446,6 +449,87 @@
     opacity: 0.7;
     cursor: not-allowed;
     transform: none;
+}
+
+.publishActions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.publishActions .saveBtn {
+    flex: 1;
+}
+
+.publishBtn {
+    background: #1e293b;
+    color: white;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 118px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.publishBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 20px rgba(15, 23, 42, 0.2);
+}
+
+.publishBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.liveStatusBox,
+.paymentNoticeBox {
+    margin-top: 14px;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 0.84rem;
+}
+
+.liveStatusBox {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.paymentNoticeBox {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+}
+
+.statusIcon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.liveStatusBox strong,
+.paymentNoticeBox strong {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.liveStatusBox span,
+.paymentNoticeBox span {
+    display: block;
+    line-height: 1.4;
 }
 
 .storyItemBox {

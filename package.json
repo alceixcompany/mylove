@@ -17,6 +17,8 @@
     "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
     "firebase": "^12.8.0",
+    "firebase-admin": "^13.8.0",
+    "iyzipay": "^2.0.67",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

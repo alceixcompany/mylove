@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 // DND Kit
@@ -52,7 +52,9 @@ import {
     HiOutlineDevicePhoneMobile,
     HiOutlineComputerDesktop,
     HiOutlineArrowLeft,
-    HiOutlineLockClosed
+    HiOutlineLockClosed,
+    HiOutlineCheckCircle,
+    HiOutlineCreditCard
 } from "react-icons/hi2";
 
 import styles from '../page.module.css';
@@ -143,6 +145,7 @@ function SidebarSortableItem({ id, isVisible, onToggle, onEdit }) {
 
 export default function Dashboard() {
     const [user, setUser] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [pageData, setPageData] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -203,6 +206,8 @@ export default function Dashboard() {
     });
 
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+    const hasPaid = userProfile?.paid === true;
+    const canViewLivePage = Boolean(pageData && hasPaid && pageData.isLive !== false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -217,6 +222,9 @@ export default function Dashboard() {
                         lastLogin: new Date().toISOString(),
                         loginCount: increment(1)
                     }, { merge: true });
+
+                    const userSnap = await getDoc(userRef);
+                    setUserProfile(userSnap.exists() ? userSnap.data() : { paid: false });
 
                     // More robust way with atomic increment if we import it
                     // But let's just do a simple set for now to ensure the user exists in Firestore
@@ -411,16 +419,33 @@ export default function Dashboard() {
         }
     };
 
-    const handleSaveAll = async () => {
+    const handleSaveAll = async (options = {}) => {
+        const silent = options?.silent === true;
         setSaving(true);
         setMessage('');
         setError('');
         try {
-            const cleanSlug = slug.toLowerCase().replace(/\s+/g, '-');
+            if (!user) {
+                setError('Oturum bulunamadı.');
+                return null;
+            }
+
+            const cleanSlug = slug.toLowerCase().trim().replace(/\s+/g, '-');
+
+            if (!cleanSlug) {
+                setError('Sayfa linki boş olamaz.');
+                return null;
+            }
+
+            const now = new Date().toISOString();
+            const isLive = hasPaid || pageData?.isLive === true;
             const dataToSave = {
                 userId: user.uid,
                 urlSlug: cleanSlug,
                 sectionOrder,
+                visibleSections,
+                isLive,
+                updatedAt: now,
                 ...formData,
                 venue: {
                     name: formData.venueName,
@@ -430,25 +455,52 @@ export default function Dashboard() {
                 }
             };
 
-            if (!pageData) {
+            const slugChanged = !pageData || pageData.urlSlug !== cleanSlug;
+
+            if (slugChanged) {
                 const q = query(collection(db, "pages"), where("urlSlug", "==", cleanSlug));
                 const snap = await getDocs(q);
-                if (!snap.empty) { setError('Bu link daha önce alınmış.'); setSaving(false); return; }
+
+                if (!snap.empty && snap.docs.some(page => page.id !== pageData?.id)) {
+                    setError('Bu link daha önce alınmış.');
+                    return null;
+                }
+            }
+
+            let savedPage;
+
+            if (!pageData) {
                 const ref = doc(collection(db, "pages"));
-                await setDoc(ref, dataToSave);
-                setPageData({ ...dataToSave, id: ref.id });
+                savedPage = { ...dataToSave, id: ref.id, createdAt: now };
+                await setDoc(ref, savedPage);
+                setPageData(savedPage);
             } else {
                 await updateDoc(doc(db, "pages", pageData.id), {
-                    ...dataToSave,
-                    visibleSections
+                    ...dataToSave
                 });
+                savedPage = { ...pageData, ...dataToSave };
+                setPageData(savedPage);
             }
-            setMessage('Tüm değişiklikler başarıyla kaydedildi!');
+
+            if (!silent) {
+                setMessage(isLive ? 'Tüm değişiklikler başarıyla yayınlandı!' : 'Taslağın kaydedildi. Yayına almak için ödeme adımına geçebilirsin.');
+            }
             setActiveEditor(null);
+            return savedPage;
         } catch (err) {
             setError(err.message);
+            return null;
+        } finally {
+            setSaving(false);
         }
-        setSaving(false);
+    };
+
+    const handleGoLive = async () => {
+        const savedPage = await handleSaveAll({ silent: true });
+
+        if (savedPage) {
+            router.push('/payment');
+        }
     };
 
     const renderComponent = (id) => {
@@ -502,14 +554,14 @@ export default function Dashboard() {
                 <div className={editorStyles.sidebarHeader}>
                     <div className={editorStyles.sidebarTitleRow}>
                         <h2>Aşk Paneli</h2>
-                        {pageData && (
+                        {canViewLivePage && (
                             <a
                                 href={`/${pageData.urlSlug}`}
                                 target="_blank"
                                 className={editorStyles.liveLink}
                                 title="Canlı Sayfayı Gör"
                             >
-                                🔗 Gör
+                                <HiOutlineLink /> Gör
                             </a>
                         )}
                     </div>
@@ -545,9 +597,30 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    <button onClick={handleSaveAll} disabled={saving} className={editorStyles.saveBtn} style={{ marginTop: '15px' }}>
-                        {saving ? '⚡ Kaydediliyor...' : '⚡ Değişiklikleri Yayınla'}
-                    </button>
+                    <div className={hasPaid ? editorStyles.liveStatusBox : editorStyles.paymentNoticeBox}>
+                        <div className={editorStyles.statusIcon}>
+                            {hasPaid ? <HiOutlineCheckCircle /> : <HiOutlineCreditCard />}
+                        </div>
+                        <div>
+                            <strong>{hasPaid ? 'Sayfan yayında' : 'Taslak modunda'}</strong>
+                            <span>
+                                {hasPaid
+                                    ? 'Kaydettiğin değişiklikler canlı sayfaya yansır.'
+                                    : 'Sayfan kaydedilir, ödeme sonrası public link aktif olur.'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className={editorStyles.publishActions}>
+                        <button onClick={handleSaveAll} disabled={saving} className={editorStyles.saveBtn}>
+                            {saving ? 'Kaydediliyor...' : (hasPaid ? 'Değişiklikleri Yayınla' : 'Taslağı Kaydet')}
+                        </button>
+                        {!hasPaid && (
+                            <button onClick={handleGoLive} disabled={saving} className={editorStyles.publishBtn}>
+                                Yayına Al
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className={editorStyles.sidebarContent}>
@@ -733,10 +806,10 @@ export default function Dashboard() {
                             <input type="text" value={formData.rsvpSubtitle} onChange={e => handleUpdateField('rsvpSubtitle', e.target.value)} className={editorStyles.input} />
 
                             <h4 style={{ marginTop: '20px', marginBottom: '10px', fontSize: '0.9rem' }}>Katılım Seçenekleri</h4>
-                            <label className={editorStyles.label}>"Evet" Metni</label>
+                            <label className={editorStyles.label}>Evet metni</label>
                             <input type="text" value={formData.rsvpYesOption} onChange={e => handleUpdateField('rsvpYesOption', e.target.value)} className={editorStyles.input} />
 
-                            <label className={editorStyles.label}>"Hayır" Metni</label>
+                            <label className={editorStyles.label}>Hayır metni</label>
                             <input type="text" value={formData.rsvpNoOption} onChange={e => handleUpdateField('rsvpNoOption', e.target.value)} className={editorStyles.input} />
 
                             <h4 style={{ marginTop: '20px', marginBottom: '10px', fontSize: '0.9rem' }}>Ekstra Seçenekler (Menü/Plan)</h4>

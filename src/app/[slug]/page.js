@@ -1,5 +1,5 @@
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc, increment } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebaseAdmin';
+import { FieldValue } from 'firebase-admin/firestore';
 import Hero from '@/components/Hero/Hero';
 import Timeline from '@/components/Timeline/Timeline';
 import Guestbook from '@/components/Guestbook/Guestbook';
@@ -11,11 +11,16 @@ import ProtectionGate from '@/components/ProtectionGate/ProtectionGate';
 import styles from '../page.module.css';
 import { notFound } from 'next/navigation';
 
+export const runtime = 'nodejs';
+
 export default async function CouplePage({ params }) {
     const { slug } = await params;
 
-    const q = query(collection(db, "pages"), where("urlSlug", "==", slug));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await adminDb
+        .collection("pages")
+        .where("urlSlug", "==", slug)
+        .limit(1)
+        .get();
 
     if (querySnapshot.empty) {
         notFound();
@@ -24,10 +29,21 @@ export default async function CouplePage({ params }) {
     const pageDoc = querySnapshot.docs[0];
     const userData = pageDoc.data();
 
+    if (!userData.userId) {
+        notFound();
+    }
+
+    const ownerSnap = await adminDb.collection("users").doc(userData.userId).get();
+    const ownerData = ownerSnap.exists ? ownerSnap.data() : {};
+
+    if (ownerData.paid !== true || userData.isLive === false) {
+        notFound();
+    }
+
     // Background hit tracking
     try {
-        await updateDoc(doc(db, "pages", pageDoc.id), {
-            hits: increment(1)
+        await pageDoc.ref.update({
+            hits: FieldValue.increment(1)
         });
     } catch (e) {
         console.error("Hit tracking error:", e);

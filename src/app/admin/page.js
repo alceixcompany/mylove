@@ -16,10 +16,30 @@ import {
     HiOutlineChevronLeft,
     HiOutlineChevronRight,
     HiOutlineRectangleStack,
-    HiOutlineArrowLeftOnRectangle
+    HiOutlineArrowLeftOnRectangle,
+    HiOutlineCog6Tooth,
+    HiOutlineCreditCard,
+    HiOutlineKey,
+    HiOutlineServerStack
 } from "react-icons/hi2";
 
 const ITEMS_PER_PAGE = 10;
+const DEFAULT_PAYMENT_SETTINGS = {
+    iyzico: {
+        active: true,
+        apiKey: '',
+        secretKey: '',
+        baseUrl: 'https://api.iyzipay.com',
+        secretKeyConfigured: false
+    },
+    package: {
+        packageKey: 'single_page_live',
+        packageName: 'Sonsuz Ask Sayfa Yayini',
+        amount: 499,
+        currency: 'TRY'
+    },
+    appUrl: ''
+};
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -31,6 +51,11 @@ export default function AdminDashboard() {
     const [usersList, setUsersList] = useState([]);
     const [pagesList, setPagesList] = useState([]);
     const [referrals, setReferrals] = useState([]);
+    const [paymentSettings, setPaymentSettings] = useState(DEFAULT_PAYMENT_SETTINGS);
+    const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(false);
+    const [paymentSettingsSaving, setPaymentSettingsSaving] = useState(false);
+    const [paymentMessage, setPaymentMessage] = useState('');
+    const [paymentError, setPaymentError] = useState('');
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -49,6 +74,7 @@ export default function AdminDashboard() {
                 }
                 setUser(currentUser);
                 fetchData();
+                fetchPaymentSettings(currentUser);
             } else {
                 router.push('/login');
             }
@@ -71,19 +97,111 @@ export default function AdminDashboard() {
             const refs = refsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setReferrals(refs);
 
+            const paymentsSnap = await getDocs(collection(db, "payments"));
+            const payments = paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
             const totalHits = pages.reduce((acc, curr) => acc + (curr.hits || 0), 0);
-            const premiumPages = pages.filter(p => p.isPremium).length;
+            const paidRevenue = payments
+                .filter(payment => payment.status === 'paid')
+                .reduce((acc, payment) => acc + Number(payment.finalAmount || payment.amount || 0), 0);
 
             setStats({
                 totalUsers: users.length,
                 totalHits: totalHits,
-                totalRevenue: premiumPages * 250,
+                totalRevenue: paidRevenue,
                 totalPages: pages.length
             });
         } catch (error) {
             console.error("Data fetch error:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPaymentSettings = async (currentUser = user) => {
+        if (!currentUser) return;
+        setPaymentSettingsLoading(true);
+        setPaymentError('');
+        try {
+            const token = await currentUser.getIdToken();
+            const response = await fetch('/api/admin/payment-settings', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Ödeme ayarları alınamadı.');
+            }
+
+            setPaymentSettings({
+                ...DEFAULT_PAYMENT_SETTINGS,
+                ...result.data,
+                iyzico: {
+                    ...DEFAULT_PAYMENT_SETTINGS.iyzico,
+                    ...result.data.iyzico,
+                    secretKey: ''
+                },
+                package: {
+                    ...DEFAULT_PAYMENT_SETTINGS.package,
+                    ...result.data.package
+                }
+            });
+        } catch (error) {
+            setPaymentError(error.message);
+        } finally {
+            setPaymentSettingsLoading(false);
+        }
+    };
+
+    const updatePaymentSetting = (section, field, value) => {
+        setPaymentSettings(prev => ({
+            ...prev,
+            [section]: {
+                ...prev[section],
+                [field]: value
+            }
+        }));
+    };
+
+    const savePaymentSettings = async () => {
+        if (!user) return;
+        setPaymentSettingsSaving(true);
+        setPaymentMessage('');
+        setPaymentError('');
+        try {
+            const token = await user.getIdToken();
+            const response = await fetch('/api/admin/payment-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(paymentSettings)
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Ödeme ayarları kaydedilemedi.');
+            }
+
+            setPaymentSettings({
+                ...DEFAULT_PAYMENT_SETTINGS,
+                ...result.data,
+                iyzico: {
+                    ...DEFAULT_PAYMENT_SETTINGS.iyzico,
+                    ...result.data.iyzico,
+                    secretKey: ''
+                },
+                package: {
+                    ...DEFAULT_PAYMENT_SETTINGS.package,
+                    ...result.data.package
+                }
+            });
+            setPaymentMessage('Ödeme ayarları kaydedildi.');
+        } catch (error) {
+            setPaymentError(error.message);
+        } finally {
+            setPaymentSettingsSaving(false);
         }
     };
 
@@ -223,7 +341,7 @@ export default function AdminDashboard() {
                                     <td><a href={`/${page.urlSlug}`} target="_blank" style={{ color: 'var(--primary-rose)', fontWeight: '600' }}>/{page.urlSlug}</a></td>
                                     <td>{page.userId?.substring(0, 8)}...</td>
                                     <td>{page.hits || 0}</td>
-                                    <td><span className={`${styles.badge} ${page.isPremium ? styles.premiumBadge : styles.freeBadge}`}>{page.isPremium ? 'Premium' : 'Ücretsiz'}</span></td>
+                                    <td><span className={`${styles.badge} ${page.isLive ? styles.premiumBadge : styles.freeBadge}`}>{page.isLive ? 'Yayında' : 'Taslak'}</span></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -300,6 +418,129 @@ export default function AdminDashboard() {
         );
     };
 
+    const renderPaymentSettings = () => (
+        <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+                <div>
+                    <h2 className={styles.sectionTitle}>Ödeme Ayarları</h2>
+                    <p className={styles.sectionHint}>Iyzico canlı bilgileri ve tek seferlik yayın paketini buradan yönet.</p>
+                </div>
+                <span className={`${styles.badge} ${paymentSettings.iyzico.active ? styles.premiumBadge : styles.freeBadge}`}>
+                    {paymentSettings.iyzico.active ? 'Aktif' : 'Pasif'}
+                </span>
+            </div>
+
+            {paymentMessage && <div className={styles.successBox}>{paymentMessage}</div>}
+            {paymentError && <div className={styles.errorBox}>{paymentError}</div>}
+
+            <div className={styles.settingsGrid}>
+                <div className={styles.settingsCard}>
+                    <h3><HiOutlineCreditCard /> Paket</h3>
+                    <label className={styles.label}>Paket anahtarı</label>
+                    <input
+                        className={styles.input}
+                        value={paymentSettings.package.packageKey}
+                        onChange={(event) => updatePaymentSetting('package', 'packageKey', event.target.value)}
+                        placeholder="single_page_live"
+                    />
+
+                    <label className={styles.label}>Paket adı</label>
+                    <input
+                        className={styles.input}
+                        value={paymentSettings.package.packageName}
+                        onChange={(event) => updatePaymentSetting('package', 'packageName', event.target.value)}
+                        placeholder="Sonsuz Ask Sayfa Yayini"
+                    />
+
+                    <div className={styles.formGridTwo}>
+                        <div>
+                            <label className={styles.label}>Fiyat</label>
+                            <input
+                                className={styles.input}
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={paymentSettings.package.amount}
+                                onChange={(event) => updatePaymentSetting('package', 'amount', event.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className={styles.label}>Para birimi</label>
+                            <select
+                                className={styles.input}
+                                value={paymentSettings.package.currency}
+                                onChange={(event) => updatePaymentSetting('package', 'currency', event.target.value)}
+                            >
+                                <option value="TRY">TRY</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="GBP">GBP</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className={styles.settingsCard}>
+                    <h3><HiOutlineKey /> Iyzico Canlı</h3>
+                    <label className={styles.checkboxLine}>
+                        <input
+                            type="checkbox"
+                            checked={paymentSettings.iyzico.active}
+                            onChange={(event) => updatePaymentSetting('iyzico', 'active', event.target.checked)}
+                        />
+                        Ödeme sistemi aktif
+                    </label>
+
+                    <label className={styles.label}>API Key</label>
+                    <input
+                        className={styles.input}
+                        value={paymentSettings.iyzico.apiKey}
+                        onChange={(event) => updatePaymentSetting('iyzico', 'apiKey', event.target.value)}
+                        placeholder="Iyzico canlı API key"
+                    />
+
+                    <label className={styles.label}>Secret Key</label>
+                    <input
+                        className={styles.input}
+                        type="password"
+                        value={paymentSettings.iyzico.secretKey}
+                        onChange={(event) => updatePaymentSetting('iyzico', 'secretKey', event.target.value)}
+                        placeholder={paymentSettings.iyzico.secretKeyConfigured ? 'Kayıtlı secret korunacak' : 'Iyzico canlı secret key'}
+                    />
+
+                    <div className={styles.liveEndpoint}>
+                        <HiOutlineServerStack />
+                        <div>
+                            <strong>Canlı endpoint</strong>
+                            <span>https://api.iyzipay.com</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className={styles.settingsCard} style={{ marginTop: 20 }}>
+                <h3><HiOutlineCog6Tooth /> Site</h3>
+                <label className={styles.label}>Canlı site adresi</label>
+                <input
+                    className={styles.input}
+                    value={paymentSettings.appUrl}
+                    onChange={(event) => setPaymentSettings(prev => ({ ...prev, appUrl: event.target.value }))}
+                    placeholder="https://askarsivi.com"
+                />
+                <p className={styles.sectionHint}>Iyzico callback sonrası kullanıcı bu adrese yönlendirilir. Canlıda domaini eksiksiz yaz.</p>
+            </div>
+
+            <div className={styles.settingsActions}>
+                <button onClick={() => fetchPaymentSettings()} className={`${styles.btn} ${styles.btnOutline}`} disabled={paymentSettingsLoading || paymentSettingsSaving}>
+                    Yenile
+                </button>
+                <button onClick={savePaymentSettings} className={styles.btn} disabled={paymentSettingsSaving}>
+                    {paymentSettingsSaving ? 'Kaydediliyor...' : 'Ayarları Kaydet'}
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className={styles.adminLayout}>
             {/* Sidebar */}
@@ -310,6 +551,7 @@ export default function AdminDashboard() {
                     <button onClick={() => { setActiveTab('users'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'users' ? styles.navItemActive : ''}`}><HiOutlineUsers /> Kullanıcılar</button>
                     <button onClick={() => { setActiveTab('pages'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'pages' ? styles.navItemActive : ''}`}><HiOutlineRectangleStack /> Sayfalar</button>
                     <button onClick={() => { setActiveTab('referrals'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'referrals' ? styles.navItemActive : ''}`}><HiOutlineLink /> Referanslar</button>
+                    <button onClick={() => { setActiveTab('payments'); setCurrentPage(1); }} className={`${styles.navItem} ${activeTab === 'payments' ? styles.navItemActive : ''}`}><HiOutlineCog6Tooth /> Ödeme</button>
                 </nav>
                 <div style={{ marginTop: 'auto' }}>
                     <button onClick={() => router.push('/dashboard')} className={styles.navItem}><HiOutlineChevronLeft /> Editöre Dön</button>
@@ -323,6 +565,7 @@ export default function AdminDashboard() {
                 {activeTab === 'users' && renderUsers()}
                 {activeTab === 'pages' && renderPages()}
                 {activeTab === 'referrals' && renderReferrals()}
+                {activeTab === 'payments' && renderPaymentSettings()}
             </main>
         </div>
     );
