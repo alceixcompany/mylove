@@ -7,6 +7,18 @@ function getSettingsRef() {
     return adminDb.collection("settings").doc("payment");
 }
 
+function normalizeAppUrl(value) {
+    const input = String(value || "").trim();
+    if (!input) return "";
+
+    try {
+        const normalized = /^[a-z][a-z0-9+\-.]*:\/\//i.test(input) ? input : `https://${input}`;
+        return new URL(normalized).origin;
+    } catch {
+        return input.replace(/\/$/, "");
+    }
+}
+
 function parseMoney(value, fallback) {
     const parsed = Number.parseFloat(String(value ?? "").replace(",", "."));
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
@@ -29,7 +41,7 @@ function normalizeSettings(data = {}, includeSecrets = false) {
             amount: parseMoney(packageSettings.amount, 499),
             currency: packageSettings.currency || "TRY"
         },
-        appUrl: data.appUrl || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || ""
+        appUrl: normalizeAppUrl(data.appUrl || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "")
     };
 
     if (includeSecrets) {
@@ -72,7 +84,7 @@ export async function savePaymentSettings(input) {
             amount: parseMoney(input.package?.amount, 499),
             currency: (input.package?.currency || "TRY").trim().toUpperCase()
         },
-        appUrl: input.appUrl?.trim() || "",
+        appUrl: normalizeAppUrl(input.appUrl),
         updatedAt: FieldValue.serverTimestamp()
     };
 

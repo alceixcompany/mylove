@@ -6,11 +6,24 @@ export function toMinorUnit(amount) {
     return Math.round(Number(amount) * 100);
 }
 
+function normalizeConfiguredAppUrl(configuredUrl) {
+    const value = String(configuredUrl || "").trim();
+    if (!value) return "";
+
+    try {
+        const normalized = /^[a-z][a-z0-9+\-.]*:\/\//i.test(value) ? value : `https://${value}`;
+        const url = new URL(normalized);
+        return url.origin;
+    } catch {
+        return value.replace(/\/$/, "");
+    }
+}
+
 export function getAppUrl(request, configuredAppUrl) {
     const configuredUrl = configuredAppUrl || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
 
     if (configuredUrl) {
-        return configuredUrl.replace(/\/$/, "");
+        return normalizeConfiguredAppUrl(configuredUrl);
     }
 
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
