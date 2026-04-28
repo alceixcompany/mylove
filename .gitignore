@@ -16,6 +16,7 @@
 # misc
 .DS_Store
 *.pem
+askimiz-91988-firebase-adminsdk-fbsvc-d47c110d4d.json
 
 # debug
 npm-debug.log*
