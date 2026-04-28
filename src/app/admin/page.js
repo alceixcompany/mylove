@@ -24,6 +24,7 @@ import {
 } from "react-icons/hi2";
 
 const ITEMS_PER_PAGE = 10;
+const REFERRAL_CODE_LENGTH = 6;
 const DEFAULT_PAYMENT_SETTINGS = {
     iyzico: {
         active: true,
@@ -40,6 +41,24 @@ const DEFAULT_PAYMENT_SETTINGS = {
     },
     appUrl: ''
 };
+
+function buildReferralCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: REFERRAL_CODE_LENGTH }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function formatReferralDiscount(ref, currency = 'TRY') {
+    if (ref.discount) return ref.discount;
+
+    const amount = Number(ref.amount || 0);
+    const type = ref.discountType || 'fixed';
+
+    if (type === 'percentage') {
+        return `%${amount}`;
+    }
+
+    return `${amount} ${currency}`;
+}
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(null);
@@ -61,8 +80,11 @@ export default function AdminDashboard() {
     const [currentPage, setCurrentPage] = useState(1);
     const [newRefName, setNewRefName] = useState('');
     const [newRefDiscount, setNewRefDiscount] = useState('');
+    const [newRefDiscountType, setNewRefDiscountType] = useState('percentage');
     const [newRefLimit, setNewRefLimit] = useState('');
     const [newRefExpiry, setNewRefExpiry] = useState('');
+    const [referralMessage, setReferralMessage] = useState('');
+    const [referralError, setReferralError] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -207,27 +229,59 @@ export default function AdminDashboard() {
 
     const createReferral = async () => {
         if (!newRefName) return;
-        const refCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        await setDoc(doc(db, "referrals", refCode), {
+        setReferralMessage('');
+        setReferralError('');
+
+        const amount = Number.parseFloat(String(newRefDiscount).replace(',', '.'));
+        if (!Number.isFinite(amount) || amount <= 0) {
+            setReferralError('Referans indirimi icin gecerli bir deger girin.');
+            return;
+        }
+
+        const refCode = buildReferralCode();
+        const displayDiscount = newRefDiscountType === 'percentage'
+            ? `%${amount}`
+            : `${amount} ${paymentSettings.package.currency}`;
+        const payload = {
             name: newRefName,
             code: refCode,
             clicks: 0,
             conversions: 0,
-            discount: newRefDiscount || '0',
-            usageLimit: newRefLimit ? parseInt(newRefLimit) : null,
+            discount: displayDiscount,
+            discountType: newRefDiscountType,
+            amount,
+            usageLimit: newRefLimit ? parseInt(newRefLimit, 10) : null,
             expiryDate: newRefExpiry || null,
             usageCount: 0,
+            usedCount: 0,
+            isActive: true,
             createdAt: new Date().toISOString()
-        });
+        };
+
+        try {
+            await Promise.all([
+                setDoc(doc(db, "referrals", refCode), payload),
+                setDoc(doc(db, "coupons", refCode), payload)
+            ]);
+        } catch (error) {
+            setReferralError(error.message || 'Referans kodu olusturulamadi.');
+            return;
+        }
+
         setNewRefName('');
         setNewRefDiscount('');
+        setNewRefDiscountType('percentage');
         setNewRefLimit('');
         setNewRefExpiry('');
+        setReferralMessage(`Referans kodu olusturuldu: ${refCode}`);
         fetchData();
     };
 
     const deleteReferral = async (id) => {
-        await deleteDoc(doc(db, "referrals", id));
+        await Promise.all([
+            deleteDoc(doc(db, "referrals", id)),
+            deleteDoc(doc(db, "coupons", id))
+        ]);
         fetchData();
     };
 
@@ -367,10 +421,19 @@ export default function AdminDashboard() {
                     <h2 className={styles.sectionTitle}>Referans Bağlantıları</h2>
                 </div>
 
+                {referralMessage && <div className={styles.successBox}>{referralMessage}</div>}
+                {referralError && <div className={styles.errorBox}>{referralError}</div>}
+
                 <div className={styles.refForm}>
                     <div className={styles.refInputGroup}>
                         <input type="text" className={styles.input} placeholder="Kaynak Adı (örn: Instagram)" value={newRefName} onChange={(e) => setNewRefName(e.target.value)} />
-                        <input type="text" className={styles.input} placeholder="İndirim (örn: %20 veya 50TL)" value={newRefDiscount} onChange={(e) => setNewRefDiscount(e.target.value)} />
+                        <div className={styles.formGridTwo}>
+                            <input type="number" min="0" step="0.01" className={styles.input} placeholder={newRefDiscountType === 'percentage' ? 'İndirim yüzdesi' : 'İndirim tutarı'} value={newRefDiscount} onChange={(e) => setNewRefDiscount(e.target.value)} />
+                            <select className={styles.input} value={newRefDiscountType} onChange={(e) => setNewRefDiscountType(e.target.value)}>
+                                <option value="percentage">%</option>
+                                <option value="fixed">{paymentSettings.package.currency}</option>
+                            </select>
+                        </div>
                     </div>
                     <div className={styles.refInputGroup}>
                         <input type="number" className={styles.input} placeholder="Kişi Limiti (Opsiyonel)" value={newRefLimit} onChange={(e) => setNewRefLimit(e.target.value)} />
@@ -385,15 +448,16 @@ export default function AdminDashboard() {
                         <tbody>
                             {currentData.map(ref => {
                                 const isExpired = ref.expiryDate && new Date(ref.expiryDate) < new Date();
-                                const isLimitReached = ref.usageLimit && (ref.clicks || 0) >= ref.usageLimit;
+                                const usageCount = ref.usedCount || ref.usageCount || 0;
+                                const isLimitReached = ref.usageLimit && usageCount >= ref.usageLimit;
 
                                 return (
                                     <tr key={ref.id}>
                                         <td>{ref.name}</td>
                                         <td><code>{ref.code}</code></td>
-                                        <td style={{ fontWeight: '700', color: 'var(--primary-rose)' }}>{ref.discount}</td>
+                                        <td style={{ fontWeight: '700', color: 'var(--primary-rose)' }}>{formatReferralDiscount(ref, paymentSettings.package.currency)}</td>
                                         <td>
-                                            {ref.clicks || 0} / {ref.usageLimit || '∞'}
+                                            {usageCount} / {ref.usageLimit || '∞'}
                                             {isLimitReached && <span className={styles.limitedBadge} style={{ marginLeft: '5px', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '100px' }}>DOLU</span>}
                                         </td>
                                         <td>

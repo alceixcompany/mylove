@@ -1,5 +1,42 @@
-import Iyzipay from "iyzipay";
 import { getPaymentSettings } from "@/lib/paymentSettings";
+import CheckoutFormInitialize from "iyzipay/lib/resources/CheckoutFormInitialize";
+import CheckoutForm from "iyzipay/lib/resources/CheckoutForm";
+
+const Iyzipay = {
+    LOCALE: {
+        TR: "tr",
+        EN: "en"
+    },
+    PAYMENT_GROUP: {
+        PRODUCT: "PRODUCT",
+        LISTING: "LISTING",
+        SUBSCRIPTION: "SUBSCRIPTION"
+    },
+    BASKET_ITEM_TYPE: {
+        PHYSICAL: "PHYSICAL",
+        VIRTUAL: "VIRTUAL"
+    },
+    PAYMENT_CHANNEL: {
+        MOBILE: "MOBILE",
+        WEB: "WEB",
+        MOBILE_WEB: "MOBILE_WEB",
+        MOBILE_IOS: "MOBILE_IOS",
+        MOBILE_ANDROID: "MOBILE_ANDROID",
+        MOBILE_WINDOWS: "MOBILE_WINDOWS",
+        MOBILE_TABLET: "MOBILE_TABLET",
+        MOBILE_PHONE: "MOBILE_PHONE"
+    },
+    CURRENCY: {
+        TRY: "TRY",
+        EUR: "EUR",
+        USD: "USD",
+        IRR: "IRR",
+        GBP: "GBP",
+        NOK: "NOK",
+        RUB: "RUB",
+        CHF: "CHF"
+    }
+};
 
 let cachedClient = null;
 let cachedSignature = "";
@@ -23,7 +60,11 @@ export async function getIyzipayClient() {
     const signature = `${apiKey}:${secretKey}:${uri}`;
 
     if (!cachedClient || cachedSignature !== signature) {
-        cachedClient = new Iyzipay({ apiKey, secretKey, uri });
+        const config = { apiKey, secretKey, uri };
+        cachedClient = {
+            checkoutFormInitialize: new CheckoutFormInitialize(config),
+            checkoutForm: new CheckoutForm(config)
+        };
         cachedSignature = signature;
     }
 
